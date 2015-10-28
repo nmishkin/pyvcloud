@@ -899,12 +899,18 @@ class VCA(object):
         if '' == vm_name: vm_name = None
         catalogs = filter(lambda link: catalog_name == link.get_name() and link.get_type() == "application/vnd.vmware.vcloud.catalog+xml",
                                  self.vcloud_session.organization.get_Link())
-        if len(catalogs) == 1:
+        if len(catalogs) != 1:
+            Log.info(self.logger, "Unexpected number of catalogs matching '%s': %d" % (catalog_name, len(catalogs)))
+        else:
             self.response = Http.get(catalogs[0].get_href(), headers=self.vcloud_session.get_vcloud_headers(), verify=self.verify, logger=self.logger)
-            if self.response.status_code == requests.codes.ok:
+            if self.response.status_code != requests.codes.ok:
+                Log.error(self.logger, "Error getting info about catalog '%s': %s" % (catalogs[0].get_href(), self.response.status_code))
+            else:
                 catalog = catalogType.parseString(self.response.content, True)
                 catalog_items = filter(lambda catalogItemRef: catalogItemRef.get_name() == template_name, catalog.get_CatalogItems().get_CatalogItem())
-                if len(catalog_items) == 1:
+                if len(catalog_items) != 1:
+                    Log.info(self.logger, "Unexpected number of catalog items matching '%s': %d" % (template_name, len(catalog_items)))
+                else:
                     self.response = Http.get(catalog_items[0].get_href(), headers=self.vcloud_session.get_vcloud_headers(), verify=self.verify, logger=self.logger)
                     # use ElementTree instead because none of the types inside resources (not even catalogItemType) is able to parse the response correctly
                     catalogItem = ET.fromstring(self.response.content)
@@ -941,6 +947,8 @@ class VCA(object):
                         vApp = vAppType.parseString(self.response.content, True)
                         task = vApp.get_Tasks().get_Task()[0]
                         return task
+                    Log.error(self.logger, "Error trying to instantiate vApp template: %s" % self.response.status_code)
+        Log.debug(self.logger, "create_vapp is returning False")
         return False
 
     def block_until_completed(self, task):
