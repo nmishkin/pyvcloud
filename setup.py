@@ -23,8 +23,8 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 setup(
-    name='pyvcloud',
-    version='15rc1',
+    name='pyvcloud.mishkin',
+    version='15rc2',
     description='VMware vCloud Python SDK',
     long_description=read('README.rst'),
     url='https://github.com/vmware/pyvcloud',
